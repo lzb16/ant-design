@@ -32,9 +32,7 @@ function collectFilterStates<RecordType>(
   (columns || []).forEach((column, index) => {
     const columnPos = getColumnPos(index, pos);
 
-    if ('children' in column) {
-      filterStates = [...filterStates, ...collectFilterStates(column.children, init, columnPos)];
-    } else if (column.filters || 'filterDropdown' in column || 'onFilter' in column) {
+    if (column.filters || 'filterDropdown' in column || 'onFilter' in column) {
       if ('filteredValue' in column) {
         // Controlled
         let filteredValues = column.filteredValue;
@@ -59,6 +57,10 @@ function collectFilterStates<RecordType>(
         });
       }
     }
+
+    if ('children' in column) {
+      filterStates = [...filterStates, ...collectFilterStates(column.children, init, columnPos)];
+    }
   });
 
   return filterStates;
@@ -76,7 +78,7 @@ function injectFilter<RecordType>(
 ): ColumnsType<RecordType> {
   return columns.map((column, index) => {
     const columnPos = getColumnPos(index, pos);
-    const { filterMultiple = true } = column as ColumnType<RecordType>;
+    const { filterMultiple = true, filterMode, filterSearch } = column as ColumnType<RecordType>;
 
     let newColumn: ColumnsType<RecordType>[number] = column;
 
@@ -95,6 +97,8 @@ function injectFilter<RecordType>(
             columnKey={columnKey}
             filterState={filterState}
             filterMultiple={filterMultiple}
+            filterMode={filterMode}
+            filterSearch={filterSearch}
             triggerFilter={triggerFilter}
             locale={locale}
             getPopupContainer={getPopupContainer}
@@ -125,7 +129,7 @@ function injectFilter<RecordType>(
   });
 }
 
-function flattenKeys(filters?: ColumnFilterItem[]) {
+export function flattenKeys(filters?: ColumnFilterItem[]) {
   let keys: FilterValue = [];
   (filters || []).forEach(({ value, children }) => {
     keys.push(value);
@@ -207,24 +211,25 @@ function useFilter<RecordType>({
 
   const mergedFilterStates = React.useMemo(() => {
     const collectedStates = collectFilterStates(mergedColumns, false);
-
-    const filteredKeysIsNotControlled = collectedStates.every(
-      ({ filteredKeys }) => filteredKeys === undefined,
-    );
+    let filteredKeysIsAllNotControlled = true;
+    let filteredKeysIsAllControlled = true;
+    collectedStates.forEach(({ filteredKeys }) => {
+      if (filteredKeys !== undefined) {
+        filteredKeysIsAllNotControlled = false;
+      } else {
+        filteredKeysIsAllControlled = false;
+      }
+    });
 
     // Return if not controlled
-    if (filteredKeysIsNotControlled) {
+    if (filteredKeysIsAllNotControlled) {
       return filterStates;
     }
 
-    const filteredKeysIsAllControlled = collectedStates.every(
-      ({ filteredKeys }) => filteredKeys !== undefined,
-    );
-
     devWarning(
-      filteredKeysIsNotControlled || filteredKeysIsAllControlled,
+      filteredKeysIsAllControlled,
       'Table',
-      '`FilteredKeys` should all be controlled or not controlled.',
+      'Columns should all contain `filteredValue` or not contain `filteredValue`.',
     );
 
     return collectedStates;

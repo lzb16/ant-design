@@ -20,10 +20,12 @@ const localeValues: Locale = {
     filterTitle: 'Filter-Menü',
     filterConfirm: 'OK',
     filterReset: 'Zurücksetzen',
+    filterSearchPlaceholder: 'Suche in Filtern',
     selectAll: 'Selektiere Alle',
     selectInvert: 'Selektion Invertieren',
     selectionAll: 'Wählen Sie alle Daten aus',
     sortTitle: 'Sortieren',
+    emptyText: 'Keine Daten',
     expand: 'Zeile erweitern',
     collapse: 'Zeile reduzieren',
     triggerDesc: 'Klicken zur absteigenden  Sortierung',
@@ -118,6 +120,9 @@ const localeValues: Locale = {
         mismatch: '${label} enspricht nicht dem ${pattern} Muster',
       },
     },
+  },
+  Image: {
+    preview: 'Vorschau',
   },
 };
 

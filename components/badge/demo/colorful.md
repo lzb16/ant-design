@@ -1,5 +1,5 @@
 ---
-order: 8
+order: 9
 title:
   zh-CN: 多彩徽标
   en-US: Colorful Badge
@@ -32,7 +32,7 @@ const colors = [
   'lime',
 ];
 
-ReactDOM.render(
+export default () => (
   <>
     <Divider orientation="left">Presets</Divider>
     <div>
@@ -43,7 +43,7 @@ ReactDOM.render(
       ))}
     </div>
     <Divider orientation="left">Custom</Divider>
-    <div>
+    <>
       <Badge color="#f50" text="#f50" />
       <br />
       <Badge color="#2db7f5" text="#2db7f5" />
@@ -51,9 +51,8 @@ ReactDOM.render(
       <Badge color="#87d068" text="#87d068" />
       <br />
       <Badge color="#108ee9" text="#108ee9" />
-    </div>
-  </>,
-  mountNode,
+    </>
+  </>
 );
 ```
 

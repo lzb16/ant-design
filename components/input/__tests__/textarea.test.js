@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { mount } from 'enzyme';
 import RcTextArea from 'rc-textarea';
 import Input from '..';
 import focusTest from '../../../tests/shared/focusTest';
-import { sleep } from '../../../tests/utils';
+import { sleep, render } from '../../../tests/utils';
 
 const { TextArea } = Input;
 
@@ -35,18 +35,32 @@ describe('TextArea', () => {
 
     const ref = React.createRef();
 
-    const wrapper = mount(
-      <TextArea value="" readOnly autoSize={{ minRows: 2, maxRows: 6 }} wrap="off" ref={ref} />,
+    const genTextArea = (props = {}) => (
+      <TextArea
+        value=""
+        readOnly
+        autoSize={{ minRows: 2, maxRows: 6 }}
+        wrap="off"
+        ref={ref}
+        {...props}
+      />
     );
+
+    const { container, rerender } = render(genTextArea());
+
     const mockFunc = jest.spyOn(ref.current.resizableTextArea, 'resizeTextarea');
-    wrapper.setProps({ value: '1111\n2222\n3333' });
+
+    rerender(genTextArea({ value: '1111\n2222\n3333' }));
+    // wrapper.setProps({ value: '1111\n2222\n3333' });
     await sleep(0);
     expect(mockFunc).toHaveBeenCalledTimes(1);
-    wrapper.setProps({ value: '1111' });
+
+    rerender(genTextArea({ value: '1111' }));
+    // wrapper.setProps({ value: '1111' });
     await sleep(0);
     expect(mockFunc).toHaveBeenCalledTimes(2);
-    wrapper.update();
-    expect(wrapper.find('textarea').props().style.overflow).toBeFalsy();
+
+    expect(container.querySelector('textarea').style.overflow).toBeFalsy();
 
     expect(errorSpy).not.toHaveBeenCalled();
     errorSpy.mockRestore();
@@ -110,6 +124,64 @@ describe('TextArea', () => {
         expect.objectContaining({ target: expect.objectContaining({ value: '竹' }) }),
       );
     });
+
+    // 字符输入
+    it('should not cut off string when cursor position is not at the end', () => {
+      const onChange = jest.fn();
+      const wrapper = mount(<TextArea maxLength={6} defaultValue="123456" onChange={onChange} />);
+      wrapper
+        .find('textarea')
+        .simulate('change', { target: { selectionStart: 1, value: 'w123456' } });
+      wrapper
+        .find('textarea')
+        .simulate('change', { target: { selectionStart: 3, value: '123w456' } });
+      expect(wrapper.find('textarea').at(0).getDOMNode().value).toBe('123456');
+    });
+
+    // 拼音输入
+    // 1. 光标位于最后，且当前字符数未达到6个，若选中的字符 + 原字符的长度超过6个，则将最终的字符按照maxlength截断
+    it('when the input method is pinyin and the cursor is at the end, should use maxLength to crop', () => {
+      const onChange = jest.fn();
+      const wrapper = mount(<TextArea maxLength={6} defaultValue="1234" onChange={onChange} />);
+      wrapper.find('textarea').instance().value = '1234'; // enzyme not support change `currentTarget`
+      wrapper.find('textarea').instance().selectionStart = 4;
+      wrapper.find('textarea').simulate('compositionStart');
+
+      wrapper
+        .find('textarea')
+        .simulate('change', { target: { selectionStart: 9, value: '1234z z z' } });
+      wrapper
+        .find('textarea')
+        .simulate('change', { target: { selectionStart: 7, value: '1234组织者' } });
+
+      wrapper.find('textarea').instance().value = '1234组织者';
+      wrapper.find('textarea').instance().selectionStart = 7;
+      wrapper.find('textarea').simulate('compositionEnd');
+
+      expect(wrapper.find('textarea').at(0).getDOMNode().value).toBe('1234组织');
+    });
+
+    // 2. 光标位于中间或开头，且当前字符数未达到6个，若选中的字符 + 原字符的长度超过6个，则显示原有字符
+    it('when the input method is Pinyin and the cursor is in the middle, should display the original string', () => {
+      const onChange = jest.fn();
+      const wrapper = mount(<TextArea maxLength={6} defaultValue="1234" onChange={onChange} />);
+      wrapper.find('textarea').instance().value = '1234'; // enzyme not support change `currentTarget`
+      wrapper.find('textarea').instance().selectionStart = 2;
+      wrapper.find('textarea').simulate('compositionStart');
+
+      wrapper
+        .find('textarea')
+        .simulate('change', { target: { selectionStart: 2, value: '12z z z34' } });
+      wrapper
+        .find('textarea')
+        .simulate('change', { target: { selectionStart: 5, value: '12组织者34' } });
+
+      wrapper.find('textarea').instance().value = '12组织者34';
+      wrapper.find('textarea').instance().selectionStart = 5;
+      wrapper.find('textarea').simulate('compositionEnd');
+
+      expect(wrapper.find('textarea').at(0).getDOMNode().value).toBe('1234');
+    });
   });
 
   it('when prop value not in this.props, resizeTextarea should be called', async () => {
@@ -139,18 +211,7 @@ describe('TextArea', () => {
     const onResize = jest.fn();
     const wrapper = mount(<TextArea onResize={onResize} autoSize />);
     await sleep(100);
-    wrapper
-      .find('ResizeObserver')
-      .instance()
-      .onResize([
-        {
-          target: {
-            getBoundingClientRect() {
-              return {};
-            },
-          },
-        },
-      ]);
+    wrapper.triggerResize();
     await Promise.resolve();
 
     expect(onResize).toHaveBeenCalledWith(
@@ -161,12 +222,16 @@ describe('TextArea', () => {
     );
   });
 
-  it('should works same as Input', async () => {
-    const input = mount(<Input value="111" />);
-    const textarea = mount(<TextArea value="111" />);
-    input.setProps({ value: undefined });
-    textarea.setProps({ value: undefined });
-    expect(textarea.find('textarea').at(0).getDOMNode().value).toBe(input.getDOMNode().value);
+  it('should works same as Input', () => {
+    const { container: inputContainer, rerender: inputRerender } = render(<Input value="111" />);
+    const { container: textareaContainer, rerender: textareaRerender } = render(
+      <TextArea value="111" />,
+    );
+    inputRerender(<Input value={undefined} />);
+    textareaRerender(<TextArea value={undefined} />);
+    expect(textareaContainer.querySelector('textarea').value).toBe(
+      inputContainer.querySelector('input').value,
+    );
   });
 
   describe('should support showCount', () => {
@@ -369,6 +434,7 @@ describe('TextArea allowClear', () => {
       'setSelectionRange',
     );
     wrapper.find('textarea').simulate('input', { target: { value: '\n1' } });
+    wrapper.triggerResize();
     await sleep(100);
     expect(setSelectionRangeFn).toHaveBeenCalled();
     wrapper.unmount();
@@ -380,14 +446,14 @@ describe('TextArea allowClear', () => {
     expect(wrapper.find('textarea').at(0).getDOMNode().value).toBe('Light');
   });
 
-  it('onChange event should return HTMLInputElement', () => {
+  it('onChange event should return HTMLTextAreaElement', () => {
     const onChange = jest.fn();
     const wrapper = mount(<Input.TextArea onChange={onChange} allowClear />);
 
     function isNativeElement() {
       expect(onChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          target: wrapper.find('textarea').instance(),
+          target: expect.any(HTMLTextAreaElement),
         }),
       );
 
@@ -410,5 +476,62 @@ describe('TextArea allowClear', () => {
     // Reset
     wrapper.find('.ant-input-clear-icon').first().simulate('click');
     isNativeElement();
+  });
+
+  // https://github.com/ant-design/ant-design/issues/31927
+  it('should correctly when useState', () => {
+    const App = () => {
+      const [query, setQuery] = useState('');
+      return (
+        <TextArea
+          allowClear
+          value={query}
+          onChange={e => {
+            setQuery(() => e.target.value);
+          }}
+        />
+      );
+    };
+
+    const wrapper = mount(<App />);
+
+    wrapper.find('textarea').getDOMNode().focus();
+    wrapper.find('textarea').simulate('change', { target: { value: '111' } });
+    expect(wrapper.find('textarea').getDOMNode().value).toEqual('111');
+
+    wrapper.find('.ant-input-clear-icon').at(0).simulate('click');
+    expect(wrapper.find('textarea').getDOMNode().value).toEqual('');
+
+    wrapper.unmount();
+  });
+
+  // https://github.com/ant-design/ant-design/issues/31200
+  it('should not lost focus when clear input', () => {
+    const onBlur = jest.fn();
+    const wrapper = mount(<TextArea allowClear defaultValue="value" onBlur={onBlur} />, {
+      attachTo: document.body,
+    });
+    wrapper.find('textarea').getDOMNode().focus();
+    wrapper.find('.ant-input-clear-icon').at(0).simulate('mouseDown');
+    wrapper.find('.ant-input-clear-icon').at(0).simulate('click');
+    wrapper.find('.ant-input-clear-icon').at(0).simulate('mouseUp');
+    wrapper.find('.ant-input-clear-icon').at(0).simulate('focus');
+    wrapper.find('.ant-input-clear-icon').at(0).getDOMNode().click();
+    expect(onBlur).not.toBeCalled();
+    wrapper.unmount();
+  });
+
+  it('should focus text area after clear', () => {
+    const wrapper = mount(<TextArea allowClear defaultValue="111" />, { attachTo: document.body });
+    wrapper.find('.ant-input-clear-icon').at(0).simulate('click');
+    expect(document.activeElement).toBe(wrapper.find('textarea').at(0).getDOMNode());
+    wrapper.unmount();
+  });
+
+  it('should display boolean value as string', () => {
+    const wrapper = mount(<TextArea value />);
+    expect(wrapper.find('textarea').first().getDOMNode().value).toBe('true');
+    wrapper.setProps({ value: false });
+    expect(wrapper.find('textarea').first().getDOMNode().value).toBe('false');
   });
 });

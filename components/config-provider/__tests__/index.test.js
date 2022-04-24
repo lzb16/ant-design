@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { mount } from 'enzyme';
 import { SmileOutlined } from '@ant-design/icons';
+import { fireEvent, render } from '@testing-library/react';
 import ConfigProvider, { ConfigContext } from '..';
 import Button from '../../button';
 import Table from '../../table';
@@ -54,7 +55,7 @@ describe('ConfigProvider', () => {
       </ConfigProvider>,
     );
 
-    expect(wrapper.find('button').props().className).toEqual('bamboo-btn');
+    expect(wrapper.exists('button.bamboo-btn')).toBeTruthy();
   });
 
   it('dynamic prefixCls', () => {
@@ -74,11 +75,11 @@ describe('ConfigProvider', () => {
       );
     };
 
-    const wrapper = mount(<DynamicPrefixCls />);
+    const { container } = render(<DynamicPrefixCls />);
 
-    expect(wrapper.find('button').last().props().className).toEqual('bamboo-btn');
-    wrapper.find('.toggle-button').first().simulate('click');
-    expect(wrapper.find('button').last().props().className).toEqual('light-btn');
+    expect(container.querySelector('button.bamboo-btn')).toBeTruthy();
+    fireEvent.click(container.querySelector('.toggle-button'));
+    expect(container.querySelector('button.light-btn')).toBeTruthy();
   });
 
   it('iconPrefixCls', () => {
@@ -113,6 +114,6 @@ describe('ConfigProvider', () => {
       </ConfigProvider>,
     );
 
-    expect(wrapper).toMatchRenderedSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 });

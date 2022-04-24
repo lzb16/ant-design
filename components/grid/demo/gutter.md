@@ -21,7 +21,7 @@ You can use the `gutter` property of `Row` as grid spacing, we recommend set it 
 
 You can set it to a object like `{ xs: 8, sm: 16, md: 24, lg: 32 }` for responsive design.
 
-You can use a array to set vertical spacing, `[horizontal, vertical]` `[16, { xs: 8, sm: 16, md: 24, lg: 32 }]`.
+You can use an array to set vertical spacing, `[horizontal, vertical]` `[16, { xs: 8, sm: 16, md: 24, lg: 32 }]`.
 
 > vertical gutter was supported after `3.24.0`.
 
@@ -30,7 +30,7 @@ import { Row, Col, Divider } from 'antd';
 
 const style = { background: '#0092ff', padding: '8px 0' };
 
-ReactDOM.render(
+export default () => (
   <>
     <Divider orientation="left">Horizontal</Divider>
     <Row gutter={16}>
@@ -89,8 +89,7 @@ ReactDOM.render(
         <div style={style}>col-6</div>
       </Col>
     </Row>
-  </>,
-  mountNode,
+  </>
 );
 ```
 

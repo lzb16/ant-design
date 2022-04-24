@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, mount } from 'enzyme';
+import { mount } from 'enzyme';
 import List from '..';
 import ConfigProvider from '../../config-provider';
 
@@ -9,7 +9,7 @@ describe('List Item Layout', () => {
       key: 1,
       href: 'https://ant.design',
       title: `ant design`,
-      avatar: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png',
+      avatar: 'https://joeschmoe.io/api/v1/random',
       description:
         'Ant Design, a design language for background applications, is refined by Ant UED Team.',
       content:
@@ -126,7 +126,7 @@ describe('List Item Layout', () => {
         />
       </ConfigProvider>,
     );
-    expect(render(wrapper)).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('rowKey could be string', () => {
@@ -151,7 +151,7 @@ describe('List Item Layout', () => {
         renderItem={item => <List.Item>{item.title}</List.Item>}
       />,
     );
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('rowKey could be function', () => {
@@ -176,6 +176,6 @@ describe('List Item Layout', () => {
         renderItem={item => <List.Item>{item.title}</List.Item>}
       />,
     );
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 });

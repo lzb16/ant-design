@@ -33,6 +33,7 @@ const Demo = () => {
       initialValues={{ remember: true }}
       onFinish={onFinish}
       onFinishFailed={onFinishFailed}
+      autoComplete="off"
     >
       <Form.Item
         label="Username"
@@ -63,5 +64,5 @@ const Demo = () => {
   );
 };
 
-ReactDOM.render(<Demo />, mountNode);
+export default Demo;
 ```

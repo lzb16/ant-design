@@ -20,8 +20,8 @@ import { isValidElement } from '../_util/reactNode';
 
 const defaultRender = () => null;
 
-function isRenderResultPlainObject(result: RenderResult) {
-  return (
+function isRenderResultPlainObject(result: RenderResult): result is RenderResultObject {
+  return !!(
     result &&
     !isValidElement(result) &&
     Object.prototype.toString.call(result) === '[object Object]'
@@ -59,7 +59,10 @@ export interface TransferListProps<RecordType> extends TransferLocale {
   itemUnit: string;
   itemsUnit: string;
   renderList?: RenderListFunction<RecordType>;
-  footer?: (props: TransferListProps<RecordType>) => React.ReactNode;
+  footer?: (
+    props: TransferListProps<RecordType>,
+    info?: { direction: TransferDirection },
+  ) => React.ReactNode;
   onScroll: (e: React.UIEvent<HTMLUListElement>) => void;
   disabled?: boolean;
   direction: TransferDirection;
@@ -75,7 +78,7 @@ interface TransferListState {
 }
 
 export default class TransferList<
-  RecordType extends KeyWiseTransferItem
+  RecordType extends KeyWiseTransferItem,
 > extends React.PureComponent<TransferListProps<RecordType>, TransferListState> {
   static defaultProps = {
     dataSource: [],
@@ -160,8 +163,6 @@ export default class TransferList<
     return text.indexOf(filterValue) >= 0;
   };
 
-  getCurrentPageItems = () => {};
-
   // =============================== Render ===============================
   renderListBody = (
     renderList: RenderListFunction<RecordType> | undefined,
@@ -183,7 +184,7 @@ export default class TransferList<
     searchPlaceholder: string,
     filterValue: string,
     filteredItems: RecordType[],
-    notFoundContent: React.ReactNode,
+    notFoundContent: React.ReactNode | React.ReactNode,
     filteredRenderItems: RenderedItem<RecordType>[],
     checkedKeys: string[],
     renderList?: RenderListFunction<RecordType>,
@@ -210,6 +211,11 @@ export default class TransferList<
       selectedKeys: checkedKeys,
     });
 
+    const getNotFoundContent = () => {
+      const contentIndex = this.props.direction === 'left' ? 0 : 1;
+      return Array.isArray(notFoundContent) ? notFoundContent[contentIndex] : notFoundContent;
+    };
+
     let bodyNode: React.ReactNode;
     // We should wrap customize list body in a classNamed div to use flex layout.
     if (customize) {
@@ -218,7 +224,7 @@ export default class TransferList<
       bodyNode = filteredItems.length ? (
         bodyContent
       ) : (
-        <div className={`${prefixCls}-body-not-found`}>{notFoundContent}</div>
+        <div className={`${prefixCls}-body-not-found`}>{getNotFoundContent()}</div>
       );
     }
 
@@ -234,16 +240,20 @@ export default class TransferList<
     );
   }
 
-  getCheckBox(
-    filteredItems: RecordType[],
-    onItemSelectAll: (dataSource: string[], checkAll: boolean) => void,
-    showSelectAll?: boolean,
-    disabled?: boolean,
-    prefixCls?: string,
-  ): false | JSX.Element {
+  getCheckBox({
+    filteredItems,
+    onItemSelectAll,
+    disabled,
+    prefixCls,
+  }: {
+    filteredItems: RecordType[];
+    onItemSelectAll: (dataSource: string[], checkAll: boolean) => void;
+    disabled?: boolean;
+    prefixCls?: string;
+  }): false | JSX.Element {
     const checkStatus = this.getCheckStatus(filteredItems);
     const checkedAll = checkStatus === 'all';
-    const checkAllCheckbox = showSelectAll !== false && (
+    const checkAllCheckbox = (
       <Checkbox
         disabled={disabled}
         checked={checkedAll}
@@ -264,7 +274,7 @@ export default class TransferList<
 
   renderItem = (item: RecordType): RenderedItem<RecordType> => {
     const { render = defaultRender } = this.props;
-    const renderResult: RenderResult = render(item);
+    const renderResult = render(item);
     const isRenderResultPlain = isRenderResultPlainObject(renderResult);
     return {
       renderedText: isRenderResultPlain
@@ -311,13 +321,15 @@ export default class TransferList<
       renderList,
       onItemSelectAll,
       onItemRemove,
-      showSelectAll,
+      showSelectAll = true,
       showRemove,
       pagination,
+      direction,
     } = this.props;
 
     // Custom Layout
-    const footerDom = footer && footer(this.props);
+    const footerDom =
+      footer && (footer.length < 2 ? footer(this.props) : footer(this.props, { direction }));
 
     const listCls = classNames(prefixCls, {
       [`${prefixCls}-with-pagination`]: !!pagination,
@@ -349,88 +361,89 @@ export default class TransferList<
     const checkAllCheckbox =
       !showRemove &&
       !pagination &&
-      this.getCheckBox(filteredItems, onItemSelectAll, showSelectAll, disabled, prefixCls);
+      this.getCheckBox({ filteredItems, onItemSelectAll, disabled, prefixCls });
 
     let menu: React.ReactElement | null = null;
     if (showRemove) {
-      menu = (
-        <Menu>
-          {/* Remove Current Page */}
-          {pagination && (
-            <Menu.Item
-              onClick={() => {
+      const items = [
+        /* Remove Current Page */
+        pagination
+          ? {
+              key: 'removeCurrent',
+              onClick: () => {
                 const pageKeys = getEnabledItemKeys(
                   (this.defaultListBodyRef.current?.getItems() || []).map(entity => entity.item),
                 );
                 onItemRemove?.(pageKeys);
-              }}
-            >
-              {removeCurrent}
-            </Menu.Item>
-          )}
+              },
+              label: removeCurrent,
+            }
+          : null,
 
-          {/* Remove All */}
-          <Menu.Item
-            onClick={() => {
-              onItemRemove?.(getEnabledItemKeys(filteredItems));
-            }}
-          >
-            {removeAll}
-          </Menu.Item>
-        </Menu>
-      );
+        /* Remove All */
+        {
+          key: 'removeAll',
+          onClick: () => {
+            onItemRemove?.(getEnabledItemKeys(filteredItems));
+          },
+          label: removeAll,
+        },
+      ].filter(item => item);
+
+      menu = <Menu items={items} />;
     } else {
-      menu = (
-        <Menu>
-          <Menu.Item
-            onClick={() => {
-              const keys = getEnabledItemKeys(filteredItems);
-              onItemSelectAll(keys, keys.length !== checkedKeys.length);
-            }}
-          >
-            {selectAll}
-          </Menu.Item>
-          {pagination && (
-            <Menu.Item
-              onClick={() => {
+      const items = [
+        {
+          key: 'selectAll',
+          onClick: () => {
+            const keys = getEnabledItemKeys(filteredItems);
+            onItemSelectAll(keys, keys.length !== checkedKeys.length);
+          },
+          label: selectAll,
+        },
+        pagination
+          ? {
+              key: 'selectCurrent',
+              onClick: () => {
                 const pageItems = this.defaultListBodyRef.current?.getItems() || [];
                 onItemSelectAll(getEnabledItemKeys(pageItems.map(entity => entity.item)), true);
-              }}
-            >
-              {selectCurrent}
-            </Menu.Item>
-          )}
-          <Menu.Item
-            onClick={() => {
-              let availableKeys: string[];
-              if (pagination) {
-                availableKeys = getEnabledItemKeys(
-                  (this.defaultListBodyRef.current?.getItems() || []).map(entity => entity.item),
-                );
+              },
+              label: selectCurrent,
+            }
+          : null,
+
+        {
+          key: 'selectInvert',
+          onClick: () => {
+            let availableKeys: string[];
+            if (pagination) {
+              availableKeys = getEnabledItemKeys(
+                (this.defaultListBodyRef.current?.getItems() || []).map(entity => entity.item),
+              );
+            } else {
+              availableKeys = getEnabledItemKeys(filteredItems);
+            }
+
+            const checkedKeySet = new Set(checkedKeys);
+            const newCheckedKeys: string[] = [];
+            const newUnCheckedKeys: string[] = [];
+
+            availableKeys.forEach(key => {
+              if (checkedKeySet.has(key)) {
+                newUnCheckedKeys.push(key);
               } else {
-                availableKeys = getEnabledItemKeys(filteredItems);
+                newCheckedKeys.push(key);
               }
+            });
 
-              const checkedKeySet = new Set(checkedKeys);
-              const newCheckedKeys: string[] = [];
-              const newUnCheckedKeys: string[] = [];
+            onItemSelectAll(newCheckedKeys, true);
+            onItemSelectAll(newUnCheckedKeys, false);
+          },
+          label: selectInvert,
+        },
+      ];
 
-              availableKeys.forEach(key => {
-                if (checkedKeySet.has(key)) {
-                  newUnCheckedKeys.push(key);
-                } else {
-                  newCheckedKeys.push(key);
-                }
-              });
-
-              onItemSelectAll(newCheckedKeys, true);
-              onItemSelectAll(newUnCheckedKeys, false);
-            }}
-          >
-            {selectInvert}
-          </Menu.Item>
-        </Menu>
-      );
+      menu = <Menu items={items} />;
     }
 
     const dropdown = (
@@ -444,8 +457,12 @@ export default class TransferList<
       <div className={listCls} style={style}>
         {/* Header */}
         <div className={`${prefixCls}-header`}>
-          {checkAllCheckbox}
-          {dropdown}
+          {showSelectAll ? (
+            <>
+              {checkAllCheckbox}
+              {dropdown}
+            </>
+          ) : null}
           <span className={`${prefixCls}-header-selected`}>
             {this.getSelectAllLabel(checkedKeys.length, filteredItems.length)}
           </span>

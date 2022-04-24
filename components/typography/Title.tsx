@@ -1,7 +1,7 @@
 import * as React from 'react';
 import devWarning from '../_util/devWarning';
 import Base, { BlockProps } from './Base';
-import { tupleNum, Omit } from '../_util/type';
+import { tupleNum } from '../_util/type';
 
 const TITLE_ELE_LIST = tupleNum(1, 2, 3, 4, 5);
 
@@ -13,7 +13,7 @@ export type TitleProps = Omit<
   'strong'
 >;
 
-const Title: React.FC<TitleProps> = props => {
+const Title: React.ForwardRefRenderFunction<HTMLHeadingElement, TitleProps> = (props, ref) => {
   const { level = 1, ...restProps } = props;
   let component: string;
 
@@ -28,7 +28,7 @@ const Title: React.FC<TitleProps> = props => {
     component = 'h1';
   }
 
-  return <Base {...restProps} component={component} />;
+  return <Base ref={ref} {...restProps} component={component} />;
 };
 
-export default Title;
+export default React.forwardRef(Title);

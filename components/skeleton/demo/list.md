@@ -22,7 +22,7 @@ for (let i = 0; i < 3; i++) {
   listData.push({
     href: 'https://ant.design',
     title: `ant design part ${i}`,
-    avatar: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png',
+    avatar: 'https://joeschmoe.io/api/v1/random',
     description:
       'Ant Design, a design language for background applications, is refined by Ant UED Team.',
     content:
@@ -93,7 +93,7 @@ class App extends React.Component {
   }
 }
 
-ReactDOM.render(<App />, mountNode);
+export default App;
 ```
 
 <style>

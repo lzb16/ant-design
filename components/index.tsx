@@ -78,7 +78,12 @@ export { default as Descriptions } from './descriptions';
 export type { DividerProps } from './divider';
 export { default as Divider } from './divider';
 
-export type { DropDownProps } from './dropdown';
+export type {
+  DropdownProps,
+  // typo, but we need to support it for backwards compatibility
+  // https://github.com/ant-design/ant-design/pull/35161
+  DropdownProps as DropDownProps,
+} from './dropdown';
 export { default as Dropdown } from './dropdown';
 
 export type { DrawerProps } from './drawer';
@@ -92,7 +97,7 @@ export { default as Form } from './form';
 
 export { default as Grid } from './grid';
 
-export type { InputProps } from './input';
+export type { InputProps, InputRef } from './input';
 export { default as Input } from './input';
 
 export type { ImageProps } from './image';
@@ -101,7 +106,7 @@ export { default as Image } from './image';
 export type { InputNumberProps } from './input-number';
 export { default as InputNumber } from './input-number';
 
-export type { LayoutProps } from './layout';
+export type { LayoutProps, SiderProps } from './layout';
 export { default as Layout } from './layout';
 
 export type { ListProps } from './list';
@@ -153,6 +158,9 @@ export { default as Row } from './row';
 
 export type { SelectProps } from './select';
 export { default as Select } from './select';
+
+export type { SegmentedProps } from './segmented';
+export { default as Segmented } from './segmented';
 
 export type { SkeletonProps } from './skeleton';
 export { default as Skeleton } from './skeleton';

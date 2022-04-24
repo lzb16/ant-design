@@ -61,7 +61,6 @@ const Demo = () => {
                       {...field}
                       label="Sight"
                       name={[field.name, 'sight']}
-                      fieldKey={[field.fieldKey, 'sight']}
                       rules={[{ required: true, message: 'Missing sight' }]}
                     >
                       <Select disabled={!form.getFieldValue('area')} style={{ width: 130 }}>
@@ -78,7 +77,6 @@ const Demo = () => {
                   {...field}
                   label="Price"
                   name={[field.name, 'price']}
-                  fieldKey={[field.fieldKey, 'price']}
                   rules={[{ required: true, message: 'Missing price' }]}
                 >
                   <Input />
@@ -105,5 +103,5 @@ const Demo = () => {
   );
 };
 
-ReactDOM.render(<Demo />, mountNode);
+export default Demo;
 ```

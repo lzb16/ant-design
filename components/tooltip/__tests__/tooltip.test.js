@@ -1,10 +1,10 @@
 import React from 'react';
 import { mount } from 'enzyme';
 import { spyElementPrototype } from 'rc-util/lib/test/domHook';
+import { fireEvent, render } from '@testing-library/react';
 import Tooltip from '..';
 import Button from '../../button';
 import Switch from '../../switch';
-import Checkbox from '../../checkbox';
 import DatePicker from '../../date-picker';
 import Input from '../../input';
 import Group from '../../input/Group';
@@ -131,7 +131,6 @@ describe('Tooltip', () => {
 
     testComponent('Button', Button);
     testComponent('Switch', Switch);
-    testComponent('Checkbox', Checkbox);
   });
 
   it('should render disabled Button style properly', () => {
@@ -226,7 +225,7 @@ describe('Tooltip', () => {
   it('should works for input group', async () => {
     const onVisibleChange = jest.fn();
     const ref = React.createRef();
-    const wrapper = mount(
+    const { container } = render(
       <Tooltip title="hello" onVisibleChange={onVisibleChange} ref={ref}>
         <Group>
           <Input style={{ width: '50%' }} />
@@ -235,14 +234,14 @@ describe('Tooltip', () => {
       </Tooltip>,
     );
 
-    expect(wrapper.find('Group')).toHaveLength(1);
-    const picker = wrapper.find('Group').at(0);
-    picker.simulate('mouseenter');
+    expect(container.getElementsByClassName('ant-input-group')).toHaveLength(1);
+    const picker = container.getElementsByClassName('ant-input-group')[0];
+    fireEvent.mouseEnter(picker);
     await sleep(100);
     expect(onVisibleChange).toHaveBeenCalledWith(true);
     expect(ref.current.props.visible).toBe(true);
 
-    picker.simulate('mouseleave');
+    fireEvent.mouseLeave(picker);
     await sleep(100);
     expect(onVisibleChange).toHaveBeenCalledWith(false);
     expect(ref.current.props.visible).toBe(false);
@@ -347,5 +346,23 @@ describe('Tooltip', () => {
       </Tooltip>,
     );
     expect(wrapper.find('.ant-tooltip-inner').getDOMNode().style.color).toBe('red');
+  });
+
+  it('should work with loading switch', () => {
+    const onVisibleChange = jest.fn();
+    const wrapper = mount(
+      <Tooltip
+        title="loading tips"
+        mouseEnterDelay={0}
+        mouseLeaveDelay={0}
+        onVisibleChange={onVisibleChange}
+      >
+        <Switch loading defaultChecked />
+      </Tooltip>,
+    );
+    const wrapperEl = wrapper.find('.ant-tooltip-disabled-compatible-wrapper');
+    expect(wrapperEl).toHaveLength(1);
+    wrapper.find('span').first().simulate('mouseenter');
+    expect(onVisibleChange).toHaveBeenLastCalledWith(true);
   });
 });

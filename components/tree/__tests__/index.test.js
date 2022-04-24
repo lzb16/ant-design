@@ -56,13 +56,12 @@ describe('Tree', () => {
   });
 
   it('switcherIcon should be loading icon when loadData', () => {
-    function onLoadData() {
-      return new Promise(resolve => {
+    const onLoadData = () =>
+      new Promise(resolve => {
         setTimeout(() => {
           resolve();
         }, 1000);
       });
-    }
     const wrapper = mount(
       <Tree switcherIcon="switcherIcon" defaultExpandAll loadData={onLoadData}>
         <TreeNode icon="icon">
@@ -72,6 +71,23 @@ describe('Tree', () => {
       </Tree>,
     );
     expect(wrapper.render()).toMatchSnapshot();
+  });
+
+  it('switcherIcon in Tree could be render prop function', () => {
+    const wrapper = mount(
+      <Tree
+        switcherIcon={expanded =>
+          expanded ? <span className="open" /> : <span className="close" />
+        }
+        defaultExpandAll
+      >
+        <TreeNode icon="icon">
+          <TreeNode id="node1" title="node1" icon="icon" key="0-0-2" />
+          <TreeNode id="node2" title="node2" key="0-0-3" />
+        </TreeNode>
+      </Tree>,
+    );
+    expect(wrapper.find('.open').length).toBe(1);
   });
 
   // https://github.com/ant-design/ant-design/issues/23261
@@ -95,5 +111,38 @@ describe('Tree', () => {
       </Tree>,
     );
     expect(wrapper.render()).toMatchSnapshot();
+  });
+
+  describe('draggable', () => {
+    const dragTreeData = [
+      {
+        title: 'bamboo',
+        key: 'bamboo',
+      },
+    ];
+
+    it('hide icon', () => {
+      const wrapper = mount(<Tree treeData={dragTreeData} draggable={{ icon: false }} />);
+      expect(wrapper.exists('.anticon-holder')).toBeFalsy();
+    });
+
+    it('customize icon', () => {
+      const wrapper = mount(
+        <Tree treeData={dragTreeData} draggable={{ icon: <span className="little" /> }} />,
+      );
+      expect(wrapper.exists('.little')).toBeTruthy();
+    });
+
+    it('nodeDraggable', () => {
+      const nodeDraggable = jest.fn(() => false);
+      mount(<Tree treeData={dragTreeData} draggable={{ nodeDraggable }} />);
+      expect(nodeDraggable).toHaveBeenCalledWith(dragTreeData[0]);
+    });
+
+    it('nodeDraggable func', () => {
+      const nodeDraggable = jest.fn(() => false);
+      mount(<Tree treeData={dragTreeData} draggable={nodeDraggable} />);
+      expect(nodeDraggable).toHaveBeenCalledWith(dragTreeData[0]);
+    });
   });
 });

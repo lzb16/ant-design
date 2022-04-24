@@ -25,7 +25,7 @@ export interface DebounceSelectProps<ValueType = any>
 }
 
 function DebounceSelect<
-  ValueType extends { key?: string; label: React.ReactNode; value: string | number } = any
+  ValueType extends { key?: string; label: React.ReactNode; value: string | number } = any,
 >({ fetchOptions, debounceTimeout = 800, ...props }: DebounceSelectProps) {
   const [fetching, setFetching] = React.useState(false);
   const [options, setOptions] = React.useState<ValueType[]>([]);
@@ -102,5 +102,5 @@ const Demo = () => {
   );
 };
 
-ReactDOM.render(<Demo />, mountNode);
+export default Demo;
 ```

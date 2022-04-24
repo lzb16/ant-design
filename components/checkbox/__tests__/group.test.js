@@ -1,10 +1,12 @@
-import React from 'react';
-import { mount, render } from 'enzyme';
+import React, { useState } from 'react';
+import { mount } from 'enzyme';
 import Collapse from '../../collapse';
 import Table from '../../table';
 import Checkbox from '../index';
 import mountTest from '../../../tests/shared/mountTest';
 import rtlTest from '../../../tests/shared/rtlTest';
+import { render, fireEvent } from '../../../tests/utils';
+import Input from '../../input';
 
 describe('CheckboxGroup', () => {
   mountTest(Checkbox.Group);
@@ -70,9 +72,9 @@ describe('CheckboxGroup', () => {
       { label: 'Orange', value: 'Orange', style: { fontSize: 12 } },
     ];
 
-    const wrapper = render(<Checkbox.Group prefixCls="my-checkbox" options={options} />);
+    const wrapper = mount(<Checkbox.Group prefixCls="my-checkbox" options={options} />);
 
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('should be controlled by value', () => {
@@ -104,34 +106,38 @@ describe('CheckboxGroup', () => {
   // https://github.com/ant-design/ant-design/issues/16376
   it('onChange should filter removed value', () => {
     const onChange = jest.fn();
-    const wrapper = mount(
+    const { container, rerender } = render(
       <Checkbox.Group defaultValue={[1]} onChange={onChange}>
         <Checkbox key={1} value={1} />
         <Checkbox key={2} value={2} />
       </Checkbox.Group>,
     );
 
-    wrapper.setProps({
-      children: [<Checkbox key={2} value={2} />],
-    });
-
-    wrapper.find('.ant-checkbox-input').at(0).simulate('change');
+    rerender(
+      <Checkbox.Group defaultValue={[1]} onChange={onChange}>
+        <Checkbox key={2} value={2} />
+      </Checkbox.Group>,
+    );
+    fireEvent.click(container.querySelector('.ant-checkbox-input'));
 
     expect(onChange).toHaveBeenCalledWith([2]);
   });
 
   it('checkbox should register value again after value changed', () => {
     const onChange = jest.fn();
-    const wrapper = mount(
+    const { container, rerender } = render(
       <Checkbox.Group defaultValue={[1]} onChange={onChange}>
         <Checkbox key={1} value={1} />
       </Checkbox.Group>,
     );
 
-    wrapper.setProps({
-      children: [<Checkbox key={1} value={2} />],
-    });
-    expect(wrapper.find('.ant-checkbox-input').at(0).prop('checked')).toBe(false);
+    rerender(
+      <Checkbox.Group defaultValue={[1]} onChange={onChange}>
+        <Checkbox key={1} value={2} />
+      </Checkbox.Group>,
+    );
+
+    expect(container.querySelector('.ant-checkbox-input')).toHaveAttribute('checked');
   });
 
   // https://github.com/ant-design/ant-design/issues/17297
@@ -212,5 +218,50 @@ describe('CheckboxGroup', () => {
         }}
       />,
     );
+  });
+
+  it('should support number option', () => {
+    const onChange = jest.fn();
+
+    const wrapper = mount(<Checkbox.Group options={[1, 'Pear', 'Orange']} onChange={onChange} />);
+
+    wrapper.find('.ant-checkbox-input').at(0).simulate('change');
+    expect(onChange).toHaveBeenCalledWith([1]);
+  });
+
+  it('should store latest checkbox value if changed', () => {
+    const onChange = jest.fn();
+
+    const Demo = () => {
+      const [v, setV] = useState('');
+
+      React.useEffect(() => {
+        setTimeout(setV('1'), 1000);
+      }, []);
+
+      return (
+        <div>
+          <Input className="my-input" value={v} onChange={e => setV(e.target.value)} />
+          <Checkbox.Group defaultValue={['length1']} style={{ width: '100%' }} onChange={onChange}>
+            <Checkbox className="target-checkbox" value={v ? `length${v}` : 'A'}>
+              A
+            </Checkbox>
+          </Checkbox.Group>
+        </div>
+      );
+    };
+
+    const wrapper = mount(<Demo />);
+
+    wrapper.find('.ant-checkbox-input').first().simulate('change');
+    expect(onChange).toHaveBeenCalledWith([]);
+    wrapper.find('.ant-checkbox-input').first().simulate('change');
+    expect(onChange).toHaveBeenCalledWith(['length1']);
+    wrapper
+      .find('.ant-input')
+      .first()
+      .simulate('change', { target: { value: '' } });
+    wrapper.find('.ant-checkbox-input').first().simulate('change');
+    expect(onChange).toHaveBeenCalledWith(['A']);
   });
 });

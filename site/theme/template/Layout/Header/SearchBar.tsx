@@ -1,16 +1,19 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Link, browserHistory } from 'bisheng/router';
+import { Link } from 'bisheng/router';
 import classNames from 'classnames';
-import { Helmet } from 'react-helmet-async';
 import canUseDom from 'rc-util/lib/Dom/canUseDom';
 import { Input, Tooltip, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { DocSearchProps, useDocSearchKeyboardEvents, DocSearchModalProps } from '@docsearch/react';
+import {
+  DocSearchProps,
+  useDocSearchKeyboardEvents,
+  DocSearchModalProps,
+} from 'docsearch-react-fork';
 import '@docsearch/css';
-
 import { SharedProps } from './interface';
 import { IAlgoliaConfig, transformHitUrl } from './algolia-config';
+import WrapHelmet from '../../Components/Helmet';
 
 import './SearchBar.less';
 
@@ -20,6 +23,7 @@ export interface SearchBarProps extends SharedProps {
   onTriggerFocus?: (focus: boolean) => void;
   responsive: null | 'narrow' | 'crowded';
   algoliaConfig: IAlgoliaConfig;
+  router: any;
 }
 
 let SearchModal: React.FC<DocSearchModalProps> | null = null;
@@ -42,11 +46,12 @@ function isAppleDevice() {
  * - [@docusaurus-theme-search-algolia](https://docusaurus.io/docs/api/themes/@docusaurus/theme-search-algolia)
  * - [DocSearchModal Docs](https://autocomplete-experimental.netlify.app/docs/DocSearchModal)
  */
-export const SearchBar = ({
+const SearchBar = ({
   isZhCN,
   responsive,
   onTriggerFocus,
   algoliaConfig,
+  router,
 }: SearchBarProps) => {
   const [isInputFocus, setInputFocus] = React.useState(false);
   const [inputSearch, setInputSearch] = React.useState('');
@@ -61,7 +66,7 @@ export const SearchBar = ({
       return Promise.resolve();
     }
 
-    return import('@docsearch/react/modal').then(({ DocSearchModal }) => {
+    return import('docsearch-react-fork/modal').then(({ DocSearchModal }) => {
       SearchModal = DocSearchModal;
     });
   }, []);
@@ -114,7 +119,7 @@ export const SearchBar = ({
 
   const navigator = React.useRef({
     navigate({ itemUrl }: { itemUrl: string }) {
-      browserHistory.push(itemUrl);
+      router.push(itemUrl);
     },
   }).current;
 
@@ -126,14 +131,14 @@ export const SearchBar = ({
         focused: isInputFocus,
       })}
     >
-      <Helmet>
+      <WrapHelmet>
         {/* pre-connect to algolia server */}
         <link
           rel="preconnect"
           href={`https://${algoliaConfig.appId}-dsn.algolia.net`}
           crossOrigin="anonymous"
         />
-      </Helmet>
+      </WrapHelmet>
 
       <Input
         placeholder={searchInputPlaceholder}
@@ -184,6 +189,7 @@ export const SearchBar = ({
             initialQuery={searchModalQuery}
             placeholder={searchPlaceholder}
             hitComponent={Hit}
+            appId={algoliaConfig.appId}
             apiKey={algoliaConfig.apiKey}
             indexName={algoliaConfig.indexName}
             transformItems={algoliaConfig.transformData}
@@ -194,3 +200,5 @@ export const SearchBar = ({
     </div>
   );
 };
+
+export default SearchBar;

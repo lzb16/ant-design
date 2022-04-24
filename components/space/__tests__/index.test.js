@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { render, mount } from 'enzyme';
-import { act } from 'react-test-renderer';
+import { mount } from 'enzyme';
+import { act } from 'react-dom/test-utils';
 import Space from '..';
 import ConfigProvider from '../../config-provider';
 import mountTest from '../../../tests/shared/mountTest';
@@ -34,7 +34,7 @@ describe('Space', () => {
       </ConfigProvider>,
     );
 
-    expect(render(wrapper)).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('should render width rtl', () => {
@@ -55,7 +55,7 @@ describe('Space', () => {
       </ConfigProvider>,
     );
 
-    expect(render(wrapper)).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('should render width customize size', () => {
@@ -97,11 +97,12 @@ describe('Space', () => {
     const wrapper = mount(
       <Space>
         text1<span>text1</span>
+        {/* eslint-disable-next-line react/jsx-no-useless-fragment */}
         <>text3</>
       </Space>,
     );
 
-    expect(render(wrapper)).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('should render with invalidElement', () => {
@@ -164,10 +165,11 @@ describe('Space', () => {
     const wrapper = mount(
       <Space split="-">
         text1<span>text1</span>
+        {/* eslint-disable-next-line react/jsx-no-useless-fragment */}
         <>text3</>
       </Space>,
     );
 
-    expect(render(wrapper)).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 });

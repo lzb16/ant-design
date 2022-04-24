@@ -1,6 +1,7 @@
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { mount } from 'enzyme';
+import { fireEvent, render } from '@testing-library/react';
 import Upload from '..';
 import UploadList from '../UploadList';
 import Form from '../../form';
@@ -508,8 +509,7 @@ describe('Upload List', () => {
         name: 'image',
         status: 'done',
         uid: '-12',
-        url:
-          'https://publish-pic-cpu.baidu.com/1296beb3-50d9-4276-885f-52645cbb378e.jpeg@w_228%2ch_152',
+        url: 'https://publish-pic-cpu.baidu.com/1296beb3-50d9-4276-885f-52645cbb378e.jpeg@w_228%2ch_152',
         type: 'image/png',
       },
     ];
@@ -637,14 +637,17 @@ describe('Upload List', () => {
         showUploadList={{
           showRemoveIcon: true,
           showDownloadIcon: true,
-          removeIcon: () => <i>RM</i>,
+          showPreviewIcon: true,
+          removeIcon: <i>RM</i>,
           downloadIcon: <i>DL</i>,
+          previewIcon: <i>PV</i>,
         }}
       >
         <button type="button">upload</button>
       </Upload>,
     );
     expect(wrapper.render()).toMatchSnapshot();
+    wrapper.unmount();
 
     const wrapper2 = mount(
       <Upload
@@ -653,16 +656,16 @@ describe('Upload List', () => {
         showUploadList={{
           showRemoveIcon: true,
           showDownloadIcon: true,
-          removeIcon: <i>RM</i>,
+          showPreviewIcon: true,
+          removeIcon: () => <i>RM</i>,
           downloadIcon: () => <i>DL</i>,
+          previewIcon: () => <i>PV</i>,
         }}
       >
         <button type="button">upload</button>
       </Upload>,
     );
     expect(wrapper2.render()).toMatchSnapshot();
-
-    wrapper.unmount();
     wrapper2.unmount();
   });
 
@@ -701,23 +704,23 @@ describe('Upload List', () => {
       );
     };
 
-    const wrapper = mount(<TestForm />);
+    const { container, unmount } = render(<TestForm />);
 
-    wrapper.find(Form).simulate('submit');
+    fireEvent.submit(container.querySelector('form'));
     await sleep();
     expect(formRef.getFieldError(['file'])).toEqual(['file required']);
 
-    wrapper.find('input').simulate('change', {
+    fireEvent.change(container.querySelector('input'), {
       target: {
         files: [{ name: 'foo.png' }],
       },
     });
 
-    wrapper.find(Form).simulate('submit');
+    fireEvent.submit(container.querySelector('form'));
     await sleep();
     expect(formRef.getFieldError(['file'])).toEqual([]);
 
-    wrapper.unmount();
+    unmount();
   });
 
   it('return when prop onPreview not exists', () => {
@@ -749,7 +752,7 @@ describe('Upload List', () => {
     const wrapper = mount(
       <UploadList listType="picture-card" items={items} locale={{ previewFile: '' }} />,
     );
-    expect(wrapper.props().previewFile(file)).toBeTruthy();
+    expect(wrapper.find(UploadList).props().previewFile(file)).toBeTruthy();
 
     wrapper.unmount();
   });
@@ -768,7 +771,7 @@ describe('Upload List', () => {
     );
 
     // Not throw
-    wrapper.props().onDownload(file);
+    wrapper.find(UploadList).props().onDownload(file);
 
     wrapper.unmount();
   });
@@ -842,6 +845,7 @@ describe('Upload List', () => {
       <UploadList listType="picture-card" items={fileList} locale={{ uploading: 'uploading' }} />,
     );
     await wrapper
+      .find(UploadList)
       .props()
       .previewFile(mockFile)
       .then(dataUrl => {
@@ -860,6 +864,7 @@ describe('Upload List', () => {
       <UploadList listType="picture-card" items={fileList} locale={{ uploading: 'uploading' }} />,
     );
     await wrapper
+      .find(UploadList)
       .props()
       .previewFile(mockFile)
       .then(dataUrl => {
@@ -1236,6 +1241,136 @@ describe('Upload List', () => {
     defaultWrapper.unmount();
 
     const wrapper = mount(<Upload fileList={null} />);
+    wrapper.unmount();
+  });
+
+  it('should not exist crossorigin attribute when does not set file.crossorigin in case of listType="picture"', () => {
+    const list = [
+      {
+        uid: '0',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+      },
+    ];
+
+    const wrapper = mount(
+      <Upload fileList={list} listType="picture">
+        <button type="button">upload</button>
+      </Upload>,
+    );
+    list.forEach((file, i) => {
+      const imgNode = wrapper.find('.ant-upload-list-item-thumbnail img').at(i);
+      expect(imgNode.prop('crossOrigin')).toBe(undefined);
+      expect(imgNode.prop('crossOrigin')).toBe(file.crossOrigin);
+    });
+    wrapper.unmount();
+  });
+
+  it('should exist crossorigin attribute when set file.crossorigin in case of listType="picture"', () => {
+    const list = [
+      {
+        uid: '0',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+        crossOrigin: '',
+      },
+      {
+        uid: '1',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+        crossOrigin: 'anonymous',
+      },
+      {
+        uid: '2',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+        crossOrigin: 'use-credentials',
+      },
+    ];
+
+    const wrapper = mount(
+      <Upload fileList={list} listType="picture">
+        <button type="button">upload</button>
+      </Upload>,
+    );
+    list.forEach((file, i) => {
+      const imgNode = wrapper.find('.ant-upload-list-item-thumbnail img').at(i);
+      expect(imgNode.prop('crossOrigin')).not.toBe(undefined);
+      expect(imgNode.prop('crossOrigin')).toBe(file.crossOrigin);
+    });
+    wrapper.unmount();
+  });
+
+  it('should not exist crossorigin attribute when does not set file.crossorigin in case of listType="picture-card"', () => {
+    const list = [
+      {
+        uid: '0',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+      },
+    ];
+
+    const wrapper = mount(
+      <Upload fileList={list} listType="picture">
+        <button type="button">upload</button>
+      </Upload>,
+    );
+    list.forEach((file, i) => {
+      const imgNode = wrapper.find('.ant-upload-list-item-thumbnail img').at(i);
+      expect(imgNode.prop('crossOrigin')).toBe(undefined);
+      expect(imgNode.prop('crossOrigin')).toBe(file.crossOrigin);
+    });
+    wrapper.unmount();
+  });
+
+  it('should exist crossorigin attribute when set file.crossorigin in case of listType="picture-card"', () => {
+    const list = [
+      {
+        uid: '0',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+        crossOrigin: '',
+      },
+      {
+        uid: '1',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+        crossOrigin: 'anonymous',
+      },
+      {
+        uid: '2',
+        name: 'xxx.png',
+        status: 'done',
+        url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+        thumbUrl: 'https://zos.alipayobjects.com/rmsportal/IQKRngzUuFzJzGzRJXUs.png',
+        crossOrigin: 'use-credentials',
+      },
+    ];
+
+    const wrapper = mount(
+      <Upload fileList={list} listType="picture">
+        <button type="button">upload</button>
+      </Upload>,
+    );
+    list.forEach((file, i) => {
+      const imgNode = wrapper.find('.ant-upload-list-item-thumbnail img').at(i);
+      expect(imgNode.prop('crossOrigin')).not.toBe(undefined);
+      expect(imgNode.prop('crossOrigin')).toBe(file.crossOrigin);
+    });
     wrapper.unmount();
   });
 });

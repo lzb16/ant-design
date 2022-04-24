@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import raf from 'rc-util/lib/raf';
 import React from 'react';
 import { mount } from 'enzyme';
@@ -43,7 +44,6 @@ describe('Test utils function', () => {
       const callbackFn = jest.fn();
       class Test {
         @throttleByAnimationFrameDecorator()
-        // eslint-disable-next-line class-methods-use-this
         callback() {
           callbackFn();
         }
@@ -148,7 +148,9 @@ describe('Test utils function', () => {
             button
           </button>
         </Wave>,
-      ).instance();
+      )
+        .find(Wave)
+        .instance();
       expect(wrapper.bindAnimationEvent()).toBe(undefined);
     });
 
@@ -159,7 +161,9 @@ describe('Test utils function', () => {
             button
           </button>
         </Wave>,
-      ).instance();
+      )
+        .find(Wave)
+        .instance();
       expect(wrapper.bindAnimationEvent()).toBe(undefined);
     });
 
@@ -168,7 +172,9 @@ describe('Test utils function', () => {
         <Wave>
           <input />
         </Wave>,
-      ).instance();
+      )
+        .find(Wave)
+        .instance();
       expect(wrapper.bindAnimationEvent()).toBe(undefined);
     });
 

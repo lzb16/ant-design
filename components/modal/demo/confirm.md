@@ -84,8 +84,8 @@ function showPropsConfirm() {
   });
 }
 
-ReactDOM.render(
-  <Space>
+export default () => (
+  <Space wrap>
     <Button onClick={showConfirm}>Confirm</Button>
     <Button onClick={showPromiseConfirm}>With promise</Button>
     <Button onClick={showDeleteConfirm} type="dashed">
@@ -94,7 +94,6 @@ ReactDOM.render(
     <Button onClick={showPropsConfirm} type="dashed">
       With extra props
     </Button>
-  </Space>,
-  mountNode,
+  </Space>
 );
 ```

@@ -1,10 +1,11 @@
 import React from 'react';
 import { act } from 'react-dom/test-utils';
-import { mount, render } from 'enzyme';
+import { mount } from 'enzyme';
 import Table from '..';
 import Checkbox from '../../checkbox';
 import { resetWarned } from '../../_util/devWarning';
 import ConfigProvider from '../../config-provider';
+import { render } from '../../../tests/utils';
 
 describe('Table.rowSelection', () => {
   window.requestAnimationFrame = callback => window.setTimeout(callback, 16);
@@ -334,8 +335,8 @@ describe('Table.rowSelection', () => {
       selections: true,
     };
     const wrapper = mount(createTable({ rowSelection }));
-    const dropdownWrapper = render(wrapper.find('Trigger').instance().getComponent());
-    expect(dropdownWrapper).toMatchSnapshot();
+    const dropdownWrapper = mount(wrapper.find('Trigger').instance().getComponent());
+    expect(dropdownWrapper.render()).toMatchSnapshot();
   });
 
   it('fires selectInvert event', () => {
@@ -441,6 +442,76 @@ describe('Table.rowSelection', () => {
     expect(handleSelectEven).toHaveBeenCalledWith([0, 1, 2, 3]);
   });
 
+  describe('preset selection options', () => {
+    const presetData = [
+      { key: 0, name: 'Jack' },
+      { key: 1, name: 'Lucy', disabled: true },
+      { key: 2, name: 'Tom' },
+    ];
+
+    const getCheckboxProps = record => record;
+
+    it('SELECTION_ALL', () => {
+      const onChange = jest.fn();
+      const wrapper = mount(
+        createTable({
+          dataSource: presetData,
+          rowSelection: {
+            onChange,
+            defaultSelectedRowKeys: [2],
+            getCheckboxProps,
+            selections: [Table.SELECTION_ALL],
+          },
+        }),
+      );
+
+      wrapper.find('Trigger').setState({ popupVisible: true });
+      wrapper.find('li.ant-dropdown-menu-item').first().simulate('click');
+
+      expect(onChange).toHaveBeenCalledWith([0, 2], expect.anything());
+    });
+
+    it('SELECTION_INVERT', () => {
+      const onChange = jest.fn();
+      const wrapper = mount(
+        createTable({
+          dataSource: presetData,
+          rowSelection: {
+            onChange,
+            defaultSelectedRowKeys: [2],
+            getCheckboxProps,
+            selections: [Table.SELECTION_INVERT],
+          },
+        }),
+      );
+
+      wrapper.find('Trigger').setState({ popupVisible: true });
+      wrapper.find('li.ant-dropdown-menu-item').first().simulate('click');
+
+      expect(onChange).toHaveBeenCalledWith([0], expect.anything());
+    });
+
+    it('SELECTION_NONE', () => {
+      const onChange = jest.fn();
+      const wrapper = mount(
+        createTable({
+          dataSource: presetData,
+          rowSelection: {
+            onChange,
+            defaultSelectedRowKeys: [1, 2],
+            getCheckboxProps,
+            selections: [Table.SELECTION_NONE],
+          },
+        }),
+      );
+
+      wrapper.find('Trigger').setState({ popupVisible: true });
+      wrapper.find('li.ant-dropdown-menu-item').first().simulate('click');
+
+      expect(onChange).toHaveBeenCalledWith([1], expect.anything());
+    });
+  });
+
   it('could hide selectAll checkbox and custom selection', () => {
     const rowSelection = {
       hideSelectAll: true,
@@ -499,32 +570,32 @@ describe('Table.rowSelection', () => {
 
   // https://github.com/ant-design/ant-design/issues/4245
   it('should allow dynamic getCheckboxProps', () => {
-    class App extends React.Component {
-      state = {
-        disableName: 'Jack',
-      };
+    const { container, rerender } = render(
+      <Table
+        columns={columns}
+        dataSource={data}
+        rowSelection={{
+          getCheckboxProps: record => ({ disabled: record.name === 'Jack' }),
+        }}
+      />,
+    );
 
-      render() {
-        const { disableName } = this.state;
-        return (
-          <Table
-            columns={columns}
-            dataSource={data}
-            rowSelection={{
-              getCheckboxProps: record => ({ disabled: record.name === disableName }),
-            }}
-          />
-        );
-      }
-    }
-    const wrapper = mount(<App />);
-    let checkboxs = wrapper.find('input');
-    expect(checkboxs.at(1).props().disabled).toBe(true);
-    expect(checkboxs.at(2).props().disabled).toBe(false);
-    wrapper.setState({ disableName: 'Lucy' });
-    checkboxs = wrapper.find('input');
-    expect(checkboxs.at(1).props().disabled).toBe(false);
-    expect(checkboxs.at(2).props().disabled).toBe(true);
+    let checkboxList = container.querySelectorAll('input');
+    expect(checkboxList[1]).toHaveAttribute('disabled');
+    expect(checkboxList[2]).not.toHaveAttribute('disabled');
+
+    rerender(
+      <Table
+        columns={columns}
+        dataSource={data}
+        rowSelection={{
+          getCheckboxProps: record => ({ disabled: record.name === 'Lucy' }),
+        }}
+      />,
+    );
+    checkboxList = container.querySelectorAll('input');
+    expect(checkboxList[1]).not.toHaveAttribute('disabled');
+    expect(checkboxList[2]).toHaveAttribute('disabled');
   });
 
   // https://github.com/ant-design/ant-design/issues/4779
@@ -573,18 +644,18 @@ describe('Table.rowSelection', () => {
   });
 
   it('fix selection column on the left', () => {
-    const wrapper = render(
+    const wrapper = mount(
       createTable({
         rowSelection: { fixed: true },
         scroll: { x: 903 },
       }),
     );
 
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('fix expand on th left when selection column fixed on the left', () => {
-    const wrapper = render(
+    const wrapper = mount(
       createTable({
         expandable: {
           expandedRowRender() {
@@ -596,11 +667,11 @@ describe('Table.rowSelection', () => {
       }),
     );
 
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('fix selection column on the left when any other column is fixed', () => {
-    const wrapper = render(
+    const wrapper = mount(
       createTable({
         rowSelection: {},
         columns: [
@@ -614,11 +685,11 @@ describe('Table.rowSelection', () => {
       }),
     );
 
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   it('use column as selection column when key is `selection-column`', () => {
-    const wrapper = render(
+    const wrapper = mount(
       createTable({
         rowSelection: {},
         columns: [
@@ -631,7 +702,7 @@ describe('Table.rowSelection', () => {
       }),
     );
 
-    expect(wrapper).toMatchSnapshot();
+    expect(wrapper.render()).toMatchSnapshot();
   });
 
   // https://github.com/ant-design/ant-design/issues/10629
@@ -1381,6 +1452,39 @@ describe('Table.rowSelection', () => {
         .first()
         .simulate('change', { target: { checked: true } });
       expect(onChange).toHaveBeenCalledWith(['Jack'], [{ name: 'Jack' }]);
+    });
+
+    it('selectedRows ant selectedKeys should keep sync in initial state', () => {
+      const dataSource = [{ name: 'Jack' }, { name: 'Tom' }, { name: 'Lucy' }, { name: 'John' }];
+      const onChange = jest.fn();
+      const rowSelection = {
+        preserveSelectedRowKeys: true,
+        onChange,
+        selectedRowKeys: ['Jack'],
+      };
+      const wrapper = mount(
+        <Table
+          dataSource={dataSource.slice(0, 2)}
+          rowSelection={rowSelection}
+          rowKey="name"
+          columns={[
+            {
+              title: 'Name',
+              dataIndex: 'name',
+              key: 'name',
+            },
+          ]}
+        />,
+      );
+
+      wrapper.setProps({
+        dataSource: dataSource.slice(2, 4),
+      });
+      wrapper
+        .find('tbody input')
+        .first()
+        .simulate('change', { target: { checked: true } });
+      expect(onChange).toHaveBeenCalledWith(['Jack', 'Lucy'], [{ name: 'Jack' }, { name: 'Lucy' }]);
     });
   });
 });
